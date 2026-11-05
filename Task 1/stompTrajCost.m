@@ -34,7 +34,9 @@ for i = 2 : nDiscretize
     vel = vecnorm(sphere_centers_prev - sphere_centers,2,2);
     qo_cost(i) = stompObstacleCost(sphere_centers,radi, voxel_world, vel);
     
-    %% TODO: Define your qc_cost to add constraint on the end-effector
+    % Task 1: No additional end-effector orientation constraint.
+    % Task 5 will implement qc_cost.
+    
     qc_cost = 0; 
 end
 

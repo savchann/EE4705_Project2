@@ -7,7 +7,14 @@ clc;
 close all;
 
 %% 1. Load saved optimized trajectory
-load('Theta_nDisc20_nPaths_20.mat', 'theta');
+scriptFolder = fileparts(mfilename('fullpath'));
+
+resultFile = fullfile(scriptFolder, ...
+    'Results', 'Theta_nDisc20_nPaths_20.mat');
+
+load(resultFile, 'theta');
+
+addpath(scriptFolder);
 
 %% 2. Load Kinova Gen3 robot
 robot = loadrobot('kinovaGen3', 'DataFormat', 'column');
@@ -21,8 +28,9 @@ fig = figure('Position', [200 150 1000 700]);
 ax = axes('Parent', fig);
 
 %% 5. Initialize video writer
-videoName = 'KinovaGen3_Task1_Demo.mp4';
-
+videoName = fullfile(scriptFolder, ...
+    'Videos', 'KinovaGen3_Task1_Demo.mp4');
+    
 v = VideoWriter(videoName, 'MPEG-4');
 v.FrameRate = 10;
 open(v);

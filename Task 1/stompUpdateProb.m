@@ -1,24 +1,34 @@
-% Compute the exponential trajectory probability 
-% Equation (11) in the STOMP ICRA 2011 paper
 
 function trajProb = stompUpdateProb(Stheta)
-% Sensitivity
-h = 10;
 
-% max and min local cost at each time step
-maxS = max(Stheta, [], 1);
-minS = min(Stheta, [], 1);
+    % Sensitivity parameter
+    h = 10;
 
-% exp calculates the element-wise exponential
-expCost = exp(-h * (Stheta- minS) ./ (maxS - minS));
+    [nPaths, nDiscretize] = size(Stheta);
 
-% To handle the case where maxS = minS = 0. This is possible when local
-% trajectory cost only includes obstacle cost, which at the end of the time
-% duration, the speed is 0, or when there is no collision.
-expCost(isnan(expCost) == 1) = 0;
+    trajProb = zeros(nPaths, nDiscretize);
 
-% normalize the exponentialized cost to have the probabilities
-trajProb = expCost./ sum(expCost, 1);
-trajProb(isnan(trajProb) == 1) = 0;
+    for t = 1:nDiscretize
 
+        costs = Stheta(:,t);
+
+        minCost = min(costs);
+        maxCost = max(costs);
+
+        if abs(maxCost-minCost) < 1e-12
+
+            % Identical costs: uniform probabilities
+            trajProb(:,t) = 1/nPaths;
+
+        else
+
+            normalizedCost = ...
+                (costs-minCost)/(maxCost-minCost);
+
+            weights = exp(-h*normalizedCost);
+
+            trajProb(:,t) = weights/sum(weights);
+
+        end
+    end
 end
