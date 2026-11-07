@@ -1,0 +1,5 @@
+scenario,initCollidingWp,iterations,stopReason,timeSec,costInitial,costFinal,collidingWp,collidingDense,minClearance,success_rng42,successRate,meanIterSeeds
+pillar,8,8,converged (|dQ| < threshold),7.1568183,207.160666200386,206.181839644794,7,70,-Inf,0,NaN,NaN
+clutter,17,43,converged (|dQ| < threshold),39.0484189,538.636417638614,62.1400884489676,2,12,-Inf,0,NaN,NaN
+window,12,32,converged (|dQ| < threshold),32.2784521,163.073274546742,14.1936567431292,2,22,-Inf,0,NaN,NaN
+shelf,13,37,converged (|dQ| < threshold),33.417311,89.5897782559142,3.84604576484879,0,0,0.00999999423007816,1,NaN,NaN
