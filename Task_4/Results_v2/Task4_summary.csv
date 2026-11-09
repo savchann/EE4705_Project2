@@ -1,0 +1,5 @@
+scenario,stopRule,startClearance,goalClearance,initCollidingWp,iterations,stopReason,timeSec,costInitial,costFinal,collidingWp,collidingDense,minClearance,success_rng42,successRate,meanIterSeeds
+pillar,improved,0.225501292074264,0.18147224184171,8,50,"converged (sphere model collision-free, cost settled)",43.6142867,207.160666200386,55.2914593485877,0,0,0.0214166751762433,1,1,73.3333333333333
+clutter,improved,0.0494972283197556,0.0406653384286892,13,50,"converged (sphere model collision-free, cost settled)",42.1854136,399.084112027596,55.1404811741681,0,0,0.0211142283262657,1,1,46.3333333333333
+window,improved,0.179940554756032,0.0386110599078462,11,37,"converged (sphere model collision-free, cost settled)",42.9248659,144.940836356506,2.8887925365286,0,0,0.0346220735430104,1,0.666666666666667,33
+shelf,improved,0.0320580220407477,0.0340050977387868,13,51,"converged (sphere model collision-free, cost settled)",50.7124641,89.5897782559142,2.2539493466367,0,0,0.0283309277770264,1,1,54

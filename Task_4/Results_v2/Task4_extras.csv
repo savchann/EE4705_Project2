@@ -1,0 +1,12 @@
+experiment,setting,initCollidingWp,nSeeds,nSuccess,meanIter,meanTimeSec,medianMinClr
+A stop rule,"pillar, original rule",8,3,0,27.3333333333333,30.2057588333333,-Inf
+A stop rule,"pillar, improved rule",8,3,3,73.3333333333333,77.0080415333333,0.0403138534306058
+A stop rule,"clutter, original rule",13,3,1,29,30.7905858,-Inf
+A stop rule,"clutter, improved rule",13,3,3,46.3333333333333,48.3071085333333,0.0152535700583845
+A stop rule,"window, original rule",11,3,0,20,20.1751324,-Inf
+A stop rule,"window, improved rule",11,3,2,33,34.0638257,0.0204700892381575
+A stop rule,"shelf, original rule",13,3,0,20,22.5658439666667,-Inf
+A stop rule,"shelf, improved rule",13,3,3,54,53.9016298666667,0.0292370851232377
+B pillar screening,"pillarX = 0.42 m",7,3,0,69.3333333333333,73.3705504,-Inf
+B pillar screening,"pillarX = 0.55 m",8,3,3,73.3333333333333,79.4587694333333,0.0403138534306058
+B pillar screening,"pillarX = 0.65 m",4,3,3,35.3333333333333,35.6946927,0.0506923181093442
