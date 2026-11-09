@@ -26,10 +26,12 @@ clear; clc; close all;
 
 %% Settings
 scenarioNames = {'pillar', 'clutter', 'window', 'shelf'};
-runSeedStudy    = false;    % repeat each scenario with nTrials random seeds
-nTrials         = 5;
-runWindowSweep  = false;    % success rate vs. window size
-windowSizes     = [0.34 0.30 0.27];
+runSeedStudy    = true;    % repeat each scenario with nTrials random seeds
+nTrials         = 3;
+runWindowSweep  = false;   % success rate vs. window size (goal must still fit: >= 0.34 m)
+windowSizes     = [0.40 0.36];
+stopRule        = 'improved';  % 'original' = Task 1 rule (|dQ| < 0.1), see stompPlan.m
+minEndpointClr  = 0.03;    % warn if start/goal is closer than this to an obstacle [m]
 animate         = false;   % play the planned motion after each scenario
 saveVideo       = false;   % write an .mp4 of each planned motion
 saveFigures     = true;
@@ -54,8 +56,9 @@ model.spheres = ur5eSphereModel(robot);
 
 opts.nDiscretize = 20;
 opts.nPaths = 20;
-opts.convergenceThreshold = 0.1;
-opts.maxIterations = 50;
+opts.convergenceThreshold = 0.1;           % used only by the original rule
+opts.stopRule = stopRule;
+if strcmpi(stopRule, 'original'), opts.maxIterations = 50; else, opts.maxIterations = 150; end
 
 %% Main runs
 summary = struct([]);
@@ -64,6 +67,7 @@ for s = 1:numel(scenarioNames)
     fprintf('\n==================== %s ====================\n%s\n', sc.title, sc.description);
 
     [world, voxel_world] = buildVoxelWorld(sc.shapes);
+    clrIdx = find(~strcmp({sc.shapes.name}, 'table'));   % clearance ignores the table under the base
     [q0, i0] = ur5eSolveIK(robot, endEffector, sc.taskInit, sc.seedInit);
     [qT, iT] = ur5eSolveIK(robot, endEffector, sc.taskFinal, sc.seedFinal);
     fprintf('IK: start err %.1e m, goal err %.1e m\n', i0.positionError, iT.positionError);
@@ -75,6 +79,12 @@ for s = 1:numel(scenarioNames)
     cInit = stompCheckCollision(robot, theta_init, world);
     fprintf('Start free: %d, goal free: %d, initial path colliding waypoints: %d/%d\n', ...
         startFree, goalFree, cInit.nWp, opts.nDiscretize);
+    clr0 = endpointClearance(robot, q0, world, clrIdx);
+    clrT = endpointClearance(robot, qT, world, clrIdx);
+    fprintf('Endpoint clearance (meshes): start %.3f m, goal %.3f m\n', clr0, clrT);
+    if min(clr0, clrT) < minEndpointClr
+        warning('Scenario %s: start or goal is within %.0f cm of an obstacle; failures may be caused by the endpoint, which STOMP cannot move.', sc.name, 100 * minEndpointClr);
+    end
     if cInit.nWp == 0
         warning('Scenario %s: the initial path is collision-free (trivial). Adjust the obstacles.', sc.name);
     end
@@ -82,7 +92,7 @@ for s = 1:numel(scenarioNames)
     % Planning (reproducible run)
     rng(42, 'twister');
     res = stompPlan(robot, q0, qT, voxel_world, model, opts);
-    cRes = stompCheckCollision(robot, res.theta, world);
+    cRes = stompCheckCollision(robot, res.theta, world, [], clrIdx);
     fprintf('-> %d iterations (%s), %.1f s, cost %.1f -> %.1f\n', res.iter, res.stopReason, ...
         sum(res.iteration_time), res.Qtheta_initial, res.Qtheta);
     fprintf('-> colliding waypoints %d/%d, dense %d/%d, min clearance %.3f m => %s\n', ...
@@ -100,8 +110,8 @@ for s = 1:numel(scenarioNames)
     yyaxis right; plot(res.RAR_time, '-s', 'LineWidth', 1.2); ylabel('Smoothness cost');
     xlabel('Iteration'); grid on; title(['Convergence: ' sc.title]);
     if saveFigures
-        exportgraphics(figO, fullfile(resultsDir, ['Task4_' sc.name '_overlay.png']), 'Resolution', 200);
-        exportgraphics(figC, fullfile(resultsDir, ['Task4_' sc.name '_convergence.png']), 'Resolution', 200);
+        saveFigureSafe(figO, fullfile(resultsDir, ['Task4_' sc.name '_overlay.png']));
+        saveFigureSafe(figC, fullfile(resultsDir, ['Task4_' sc.name '_convergence.png']));
     end
 
     if animate || saveVideo
@@ -115,15 +125,18 @@ for s = 1:numel(scenarioNames)
         for t = 1:nTrials
             rng(t, 'twister');
             r = stompPlan(robot, q0, qT, voxel_world, model, setfield(opts, 'verbose', false)); %#ok<SFLD>
-            c = stompCheckCollision(robot, r.theta, world);
+            c = stompCheckCollision(robot, r.theta, world, [], clrIdx);
             ok(t) = c.free; its(t) = r.iter;
-            fprintf('   seed %d: %s after %d iterations\n', t, ternary(c.free, 'success', 'collision'), r.iter);
+            fprintf('   seed %d: %s after %d iterations (%s)\n', t, ternary(c.free, 'success', 'collision'), r.iter, r.stopReason);
         end
         nSuccess = sum(ok); meanIter = mean(its);
     end
 
     % Store
     row.scenario          = string(sc.name);
+    row.stopRule          = string(stopRule);
+    row.startClearance    = clr0;
+    row.goalClearance     = clrT;
     row.initCollidingWp   = cInit.nWp;
     row.iterations        = res.iter;
     row.stopReason        = string(res.stopReason);
@@ -152,6 +165,7 @@ if runWindowSweep
     for w = 1:numel(windowSizes)
         sc = helperScenarioUR5e('window', struct('windowSize', windowSizes(w)));
         [world, voxel_world] = buildVoxelWorld(sc.shapes);
+        clrIdx = find(~strcmp({sc.shapes.name}, 'table'));
         q0 = ur5eSolveIK(robot, endEffector, sc.taskInit, sc.seedInit);
         qT = ur5eSolveIK(robot, endEffector, sc.taskFinal, sc.seedFinal);
         if checkCollision(robot, qT, world, "IgnoreSelfCollision", "on")
@@ -162,7 +176,7 @@ if runWindowSweep
         for t = 1:nTrials
             rng(t, 'twister');
             r = stompPlan(robot, q0, qT, voxel_world, model, setfield(opts, 'verbose', false)); %#ok<SFLD>
-            c = stompCheckCollision(robot, r.theta, world);
+            c = stompCheckCollision(robot, r.theta, world, [], clrIdx);
             ok = ok + c.free;
         end
         rate(w) = ok / nTrials;
@@ -173,7 +187,7 @@ if runWindowSweep
     xlabel('Window size (cm)'); ylabel(sprintf('Success rate over %d seeds (%%)', nTrials));
     title('Narrow passage: STOMP success vs. window size');
     if saveFigures
-        exportgraphics(figW, fullfile(resultsDir, 'Task4_window_sweep.png'), 'Resolution', 200);
+        saveFigureSafe(figW, fullfile(resultsDir, 'Task4_window_sweep.png'));
     end
 end
 
