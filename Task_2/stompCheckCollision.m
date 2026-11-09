@@ -11,12 +11,16 @@
 %   wpCollision    (nDiscretize x 1) logical, collision at each waypoint
 %   denseCollision (nDense x 1) logical
 %   nWp, nDense    counts of colliding configurations
-%   minClearance   smallest robot-obstacle distance along the dense path [m]
-%                  (negative/NaN-free: set to -Inf if in collision)
+%   minClearance   smallest robot-obstacle distance along the dense path [m],
+%                  over the obstacles in clrIdx (-Inf if in collision)
 %   free           true if no collision in the dense check
-function c = stompCheckCollision(robot, theta, world, nInterp)
+function c = stompCheckCollision(robot, theta, world, nInterp, clrIdx)
 
-if nargin < 4, nInterp = 10; end
+if nargin < 4 || isempty(nInterp), nInterp = 10; end
+% clrIdx: obstacles included in the clearance number (default: all). Pass the
+% non-table obstacles, otherwise the 1 cm gap between the robot base and the
+% table it stands on is reported as the minimum clearance.
+if nargin < 5 || isempty(clrIdx), clrIdx = 1:numel(world); end
 nDiscretize = size(theta, 2);
 
 c.wpCollision = false(nDiscretize, 1);
@@ -33,11 +37,11 @@ for i = 1:nDiscretize - 1
     for j = 0:nInterp - 1
         a = j / nInterp;
         q = (1 - a) * theta(:, i) + a * theta(:, i + 1);
-        [c.denseCollision(idx), minClr] = checkOne(robot, q, world, minClr);
+        [c.denseCollision(idx), minClr] = checkOne(robot, q, world, minClr, clrIdx);
         idx = idx + 1;
     end
 end
-[c.denseCollision(end), minClr] = checkOne(robot, theta(:, end), world, minClr);
+[c.denseCollision(end), minClr] = checkOne(robot, theta(:, end), world, minClr, clrIdx);
 
 c.nWp = sum(c.wpCollision);
 c.nDense = sum(c.denseCollision);
@@ -45,12 +49,12 @@ c.free = ~any(c.denseCollision);
 c.minClearance = minClr;
 end
 
-function [inColl, minClr] = checkOne(robot, q, world, minClr)
+function [inColl, minClr] = checkOne(robot, q, world, minClr, clrIdx)
 [inColl, sepDist] = checkCollision(robot, q, world, ...
     "IgnoreSelfCollision", "on", "Exhaustive", "on");
 if inColl
     minClr = -Inf;
 else
-    minClr = min(minClr, min(sepDist(:)));
+    minClr = min(minClr, min(sepDist(:, clrIdx), [], 'all'));
 end
 end

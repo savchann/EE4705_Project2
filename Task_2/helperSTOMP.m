@@ -10,6 +10,7 @@ opts.nDiscretize = 20;
 opts.nPaths = 20;
 opts.convergenceThreshold = 0.1;
 opts.maxIterations = 50;
+opts.stopRule = 'original';   % Task 2 reproduces Task 1 exactly; Tasks 4/5 use the improved rule
 
 %% Is the initial (straight-line) path in collision?
 nDiscretize = opts.nDiscretize;

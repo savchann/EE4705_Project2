@@ -10,11 +10,13 @@
 % OUTPUT: q (6x1, wrapped to [-pi, pi]), info (solver info + pose error)
 function [q, info] = ur5eSolveIK(robot, eeName, Tgoal, seed)
 
-persistent ik
-if isempty(ik) || ik.RigidBodyTree.NumBodies ~= robot.NumBodies
-    ik = inverseKinematics('RigidBodyTree', robot);
-    ik.SolverParameters.AllowRandomRestart = false;
-end
+% A new solver object on every call (only a few calls per script). Reusing
+% one across calls breaks when the end-effector name switches between a
+% string ("tool0") and a char array ('tool0'): MATLAB System objects do not
+% allow input types to change after the first call.
+eeName = char(eeName);
+ik = inverseKinematics('RigidBodyTree', robot);
+ik.SolverParameters.AllowRandomRestart = false;
 
 weights = [1 1 1 1 1 1];
 [q, info] = ik(eeName, Tgoal, weights, seed(:));
