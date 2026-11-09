@@ -24,9 +24,10 @@ clear; clc; close all;
 %% Settings
 scenarioNames  = {'window', 'board_low', 'board_high'};
 qcWeight       = 10;        % constraint weight w_c (0 = constraint off)
-runSeedStudy   = false;      % repeat both settings with nTrials seeds
-nTrials        = 5;
-runWeightSweep = false;      % success / tilt vs w_c on board_low
+runSeedStudy   = true;      % repeat both settings with nTrials seeds
+nTrials        = 3;
+runWeightSweep = true;     % success / tilt vs w_c on board_low (Task5_Extras.m does a 2-scenario version)
+stopRule       = 'improved';  % see Task_2/stompPlan.m
 sweepScenario  = 'board_low';
 sweepWeights   = [0 2 5 10 20 50];
 saveFigures    = true;
@@ -59,8 +60,9 @@ baseModel.worldUp = [0; 0; 1];  % ... aligned with world z
 
 opts.nDiscretize = 20;
 opts.nPaths = 20;
-opts.convergenceThreshold = 0.1;
-opts.maxIterations = 50;
+opts.convergenceThreshold = 0.1;           % used only by the original rule
+opts.stopRule = stopRule;
+if strcmpi(stopRule, 'original'), opts.maxIterations = 50; else, opts.maxIterations = 150; end
 
 modes   = [0, qcWeight];
 modeTxt = {'no constraint', sprintf('constraint (w_c = %g)', qcWeight)};
@@ -71,8 +73,11 @@ for s = 1:numel(scenarioNames)
     sc = helperScenarioCup(scenarioNames{s});
     fprintf('\n==================== %s ====================\n%s\n', sc.title, sc.description);
     [world, voxel_world] = buildVoxelWorld(sc.shapes);
+    clrIdx = find(~strcmp({sc.shapes.name}, 'table'));
     q0 = ur5eSolveIK(robot, endEffector, sc.taskInit, sc.seedInit);
     qT = ur5eSolveIK(robot, endEffector, sc.taskFinal, sc.seedFinal);
+    fprintf('Endpoint clearance (meshes): start %.3f m, goal %.3f m\n', ...
+        endpointClearance(robot, q0, world, clrIdx), endpointClearance(robot, qT, world, clrIdx));
     theta_init = cell2mat(arrayfun(@(k) linspace(q0(k), qT(k), opts.nDiscretize), (1:6)', 'UniformOutput', false));
     cInit = stompCheckCollision(robot, theta_init, world);
     tInit = eeTiltDeg(robot, theta_init, endEffector);
@@ -86,7 +91,7 @@ for s = 1:numel(scenarioNames)
         fprintf('\n-- %s --\n', modeTxt{m});
         rng(42, 'twister');
         res = stompPlan(robot, q0, qT, voxel_world, model, setfield(opts, 'verbose', false)); %#ok<SFLD>
-        c = stompCheckCollision(robot, res.theta, world);
+        c = stompCheckCollision(robot, res.theta, world, [], clrIdx);
         [tilt, sPath] = eeTiltDeg(robot, res.theta, endEffector);
         fprintf('%d iterations (%s) | %s | max tilt %.1f deg, mean tilt %.1f deg | min clearance %.3f m\n', ...
             res.iter, res.stopReason, ternary(c.free, 'COLLISION-FREE', sprintf('IN COLLISION (%d dense)', c.nDense)), ...
@@ -107,7 +112,7 @@ for s = 1:numel(scenarioNames)
             struct('view', sc.view, 'axisLimits', sc.axisLimits, 'showEEAxis', true, ...
                    'step', 3, 'figName', sprintf('Task5 %s w=%g', sc.name, modes(m))));
         if saveFigures
-            exportgraphics(figO, fullfile(resultsDir, sprintf('Task5_%s_w%g_overlay.png', sc.name, modes(m))), 'Resolution', 200);
+            saveFigureSafe(figO, fullfile(resultsDir, sprintf('Task5_%s_w%g_overlay.png', sc.name, modes(m))));
         end
 
         % seed study
@@ -117,7 +122,7 @@ for s = 1:numel(scenarioNames)
             for t = 1:nTrials
                 rng(t, 'twister');
                 r = stompPlan(robot, q0, qT, voxel_world, model, setfield(opts, 'verbose', false)); %#ok<SFLD>
-                cc = stompCheckCollision(robot, r.theta, world);
+                cc = stompCheckCollision(robot, r.theta, world, [], clrIdx);
                 ok(t) = cc.free; mt(t) = max(eeTiltDeg(robot, r.theta, endEffector, 4));
             end
             rate = mean(ok); medTilt = median(mt);
@@ -146,7 +151,7 @@ for s = 1:numel(scenarioNames)
     title({sc.title, 'Tilt of end-effector y-axis from vertical (x = in collision)'});
     legend('Location', 'best');
     if saveFigures
-        exportgraphics(figTilt, fullfile(resultsDir, sprintf('Task5_%s_tilt.png', sc.name)), 'Resolution', 200);
+        saveFigureSafe(figTilt, fullfile(resultsDir, sprintf('Task5_%s_tilt.png', sc.name)));
     end
 end
 
@@ -158,6 +163,7 @@ writetable(T, fullfile(resultsDir, 'Task5_summary.csv'));
 if runWeightSweep
     sc = helperScenarioCup(sweepScenario);
     [world, voxel_world] = buildVoxelWorld(sc.shapes);
+    clrIdx = find(~strcmp({sc.shapes.name}, 'table'));
     q0 = ur5eSolveIK(robot, endEffector, sc.taskInit, sc.seedInit);
     qT = ur5eSolveIK(robot, endEffector, sc.taskFinal, sc.seedFinal);
     rate = zeros(size(sweepWeights)); medTilt = zeros(size(sweepWeights));
@@ -167,7 +173,7 @@ if runWeightSweep
         for t = 1:nTrials
             rng(t, 'twister');
             r = stompPlan(robot, q0, qT, voxel_world, model, setfield(opts, 'verbose', false)); %#ok<SFLD>
-            cc = stompCheckCollision(robot, r.theta, world);
+            cc = stompCheckCollision(robot, r.theta, world, [], clrIdx);
             ok(t) = cc.free; mt(t) = max(eeTiltDeg(robot, r.theta, endEffector, 4));
         end
         rate(k) = mean(ok); medTilt(k) = median(mt);
@@ -180,7 +186,7 @@ if runWeightSweep
     set(gca, 'XTick', xk, 'XTickLabel', string(sweepWeights)); xlabel('Constraint weight w_c');
     grid on; title(['Trade-off: ' sc.title]);
     if saveFigures
-        exportgraphics(figS, fullfile(resultsDir, 'Task5_weight_sweep.png'), 'Resolution', 200);
+        saveFigureSafe(figS, fullfile(resultsDir, 'Task5_weight_sweep.png'));
     end
     save(fullfile(resultsDir, 'Task5_weight_sweep.mat'), 'sweepWeights', 'rate', 'medTilt');
 end
