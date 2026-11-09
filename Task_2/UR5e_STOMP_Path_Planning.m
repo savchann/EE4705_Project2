@@ -72,3 +72,4 @@ helperInitialVisualizerUR5e;
 
 %% Path Planning using STOMP
 helperSTOMP;
+
