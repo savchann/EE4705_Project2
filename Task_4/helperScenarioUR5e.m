@@ -35,10 +35,14 @@ switch lower(name)
         % the pillar. Getting around needs a large change of arm shape
         % (pull the arm in, pass between base and pillar, reach out again),
         % so the result depends strongly on the random samples.
+        % params.pillarX (default 0.55 m): distance of the pillar from the
+        % base. Closer = less room to pass between base and pillar = harder.
+        px = 0.55;
+        if isfield(params, 'pillarX'), px = params.pillarX; end
         sc.title = 'Pillar: swing around a tall pillar';
-        sc.description = ['Tall 10x10x90 cm pillar 0.55 m in front of the base; ' ...
-            'move from one side to the other with the gripper pointing down.'];
-        sc.shapes = [table, shp('box', [0.55 0 0.45], [0.10 0.10 0.90], 'pillar')];
+        sc.description = sprintf(['Tall 10x10x90 cm pillar %.2f m in front of the base; ' ...
+            'move from one side to the other with the gripper pointing down.'], px);
+        sc.shapes = [table, shp('box', [px 0 0.45], [0.10 0.10 0.90], 'pillar')];
         sc.taskInit  = trvec2tform([0.45 -0.45 0.35]) * rotm2tform(Rdown(-pi/4));
         sc.taskFinal = trvec2tform([0.45  0.45 0.35]) * rotm2tform(Rdown( pi/4));
         sc.seedInit  = [-0.996; -1.218; 1.508; -1.860; -1.571; -1.782];
@@ -49,12 +53,17 @@ switch lower(name)
         % a ball, a bottle, a crate and a can around the start and goal,
         % and an overhead bar above the divider that blocks the simple
         % "lift high over everything" route. Many small obstacles at once.
+        % v2: divider narrowed (30 -> 20 cm) and ball moved out, because in
+        % v1 the goal pose cleared the divider by only 8 mm and the start
+        % the ball by 28 mm: the robot meshes touched the divider at the
+        % goal, so no run could succeed. Now both endpoints clear all
+        % obstacles by > 5 cm (sphere model).
         sc.title = 'Cluttered tabletop';
         sc.description = ['Divider, ball, bottle, crate, can and an overhead bar; ' ...
             'top-down pick on one side, place on the other.'];
         sc.shapes = [table, ...
-            shp('box',      [0.45  0.00 0.175], [0.10 0.30 0.35], 'divider'), ...
-            shp('sphere',   [0.18 -0.34 0.07],  0.07,             'ball'), ...
+            shp('box',      [0.45  0.00 0.175], [0.10 0.20 0.35], 'divider'), ...
+            shp('sphere',   [0.15 -0.42 0.07],  0.07,             'ball'), ...
             shp('cylinder', [0.17  0.36 0.12],  [0.04 0.24],      'bottle'), ...
             shp('box',      [0.62 -0.20 0.07],  [0.14 0.14 0.14], 'crate'), ...
             shp('cylinder', [0.62  0.20 0.10],  [0.05 0.20],      'can'), ...
@@ -68,8 +77,9 @@ switch lower(name)
         % A wall with a square window. The goal is on the far side, so the
         % forearm and wrist must thread through the opening: a narrow
         % passage, a known weak spot of sampling-based optimisers.
-        % params.windowSize (default 0.30 m): try 0.27 to see it fail.
-        W = 0.30;
+        % params.windowSize (default 0.36 m). Below ~0.34 m the goal pose
+        % itself (arm resting in the opening) comes within 3 cm of the frame.
+        W = 0.36;
         if isfield(params, 'windowSize'), W = params.windowSize; end
         xw = 0.50; t = 0.04; zc = 0.35; ytop = 0.6; ztop = 0.9;
         sc.title = sprintf('Window: reach through a %.0f cm window', 100 * W);
@@ -104,6 +114,10 @@ switch lower(name)
         sc.taskFinal = trvec2tform([0.60 0 0.44]) * rotm2tform(Rcup(0));
         sc.seedInit  = [-0.270; -0.999; 1.871; -0.872; 1.301; 0.000];
         sc.seedFinal = [-0.270; -1.353; 1.449; -0.096; 1.301; 0.000];
+        % via-point in front of the shelf, between the two compartment
+        % heights (used by the "better initial guess" test in Task4_Extras)
+        sc.taskVia = trvec2tform([0.32 0 0.30]) * rotm2tform(Rcup(0));
+        sc.seedVia = [-0.650; -2.033; 2.407; -0.374; 0.921; 0.000];
 
     otherwise
         error('helperScenarioUR5e: unknown scenario "%s"', name);
