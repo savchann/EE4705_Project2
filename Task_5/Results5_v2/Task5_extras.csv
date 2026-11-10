@@ -1,0 +1,14 @@
+experiment,setting,nSeeds,nSuccess,medianMaxTilt,meanIter,meanTimeSec
+A weight selection,"pillar, w_c = 0",3,3,15.5336459915825,55.3333333333333,57.6948237
+A weight selection,"pillar, w_c = 3",3,3,1.10297468182618,68.6666666666667,85.1568264333333
+A weight selection,"pillar, w_c = 10",3,3,0.632439451015871,73.3333333333333,86.5158515
+A weight selection,"pillar, w_c = 30",3,3,0.834079170666513,122,157.1865034
+A weight selection,"clutter, w_c = 0",3,2,37.9012586878189,67,62.0826876333333
+A weight selection,"clutter, w_c = 3",3,2,7.32119401627102,89,97.4705823
+A weight selection,"clutter, w_c = 10",3,3,3.30461485879111,98,110.890711666667
+A weight selection,"clutter, w_c = 30",3,3,1.51948583232202,96.3333333333333,111.150955066667
+B pillar screening (cup),"pillar 0.65 m, w_c = 10",3,3,0.74486022542391,41.3333333333333,52.1529688333333
+B pillar screening (cup),"pillar 0.55 m, w_c = 10",3,3,0.632439451015871,73.3333333333333,96.9625656
+B pillar screening (cup),"pillar 0.42 m, w_c = 10",3,0,1.36868159165078,58.6666666666667,64.0684094
+B pillar screening (cup),"pillar 0.42 m, w_c = 0",3,0,7.8625865219853,71.3333333333333,69.6427118666667
+C via-point init,"pillar 0.42 m, via-point, w_c = 10",3,0,0.90252999637533,62,70.5513943333333
