@@ -117,7 +117,7 @@ EE4705_Project2/
 └── README.md
 ```
 
-The tree highlights entry points and major supporting files; it is not an exhaustive listing. **Preserve the folder names**, particularly `Task 1` (with a space), because later scripts locate shared functions using relative paths.
+The tree highlights entry points and major supporting files; it is not an exhaustive listing. 
 
 ## Getting started
 
