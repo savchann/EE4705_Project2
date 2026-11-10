@@ -121,24 +121,7 @@ The tree highlights entry points and major supporting files; it is not an exhaus
 
 ## Getting started
 
-### 1. Clone the repository
-
-```powershell
-git clone https://github.com/savchann/EE4705_Project2.git
-cd EE4705_Project2
-```
-
-### 2. Open MATLAB
-
-Set MATLAB's **Current Folder** to the task you want to run, or navigate using `cd`:
-
-```matlab
-cd('C:\Robotics\EE4705_Project2\Task_2')
-```
-
-Replace the example Windows path with your local checkout location. Most main scripts resolve their own directory and add the required shared-function paths automatically.
-
-### 3. Run one task at a time
+### 1. Run one task at a time
 
 Each task may contain functions with the same name but different implementations, such as `stompTrajCost.m` and `updateJointsWorldPosition.m`. **Avoid adding all task folders indiscriminately** to the MATLAB path. Start with the appropriate main script and check function resolution if results are unexpected:
 
