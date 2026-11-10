@@ -1,30 +1,31 @@
 %% Task 5 scenarios: carrying a cup (end-effector y-axis must stay upright)
-% sc = helperScenarioCup(name)   name: 'window' | 'board_low' | 'board_high'
+% sc = helperScenarioCup(name)          name: 'window' | 'shelf' | 'pillar' | 'clutter'
+% sc = helperScenarioCup(name, params)  params.pillarX: pillar distance (m), 'pillar' only
 %
-% All start and goal poses use the "cup" orientation: tool z horizontal,
-% tool y pointing straight up (the brief asks to adjust the fixed start and
-% goal orientations to match the constraint, since they are not planned).
+% Task 5 reuses the Task 4 scenarios (same obstacles), so that the effect of
+% the constraint can be compared directly with Task 4. Only the start and
+% goal ORIENTATIONS differ where needed: both endpoints must hold the cup
+% upright (tool z horizontal, tool y = world z), because STOMP never moves
+% the endpoints.
 %
-%   window     : the Task 4 window scenario (already uses the cup pose).
-%                Expected: constraint works, cup stays nearly upright.
-%   board_low  : carry the cup from one side of a low board to the other.
-%                The board (top at z = 0.25 m, from 0.42 to 0.95 m in x) sits in front of the robot,
-%                like a low bench top or a wall-mounted shelf board (its
-%                supports are not modelled). Expected: without the
-%                constraint STOMP lifts the cup over the board but tips it
-%                ~40 deg (it would spill); with the constraint it stays
-%                nearly upright.
-%   board_high : same, board 8 cm higher (top at z = 0.33 m). Expected
-%                (mostly) FAILURE case: with the constraint STOMP gets stuck trying to
-%                slide the cup UNDER the board (staying low and level is
-%                cheap for the constraint), a local minimum it never leaves,
-%                whereas the unconstrained planner sometimes finds the lift-over
-%                route by tilting the cup.
+%   window  : Task 4 window scenario, unchanged (already cup-upright).
+%   shelf   : Task 4 shelf scenario, unchanged (already cup-upright).
+%   pillar  : Task 4 pillar obstacle; same start/goal positions, gripper
+%             changed from pointing down to holding the cup upright, tool
+%             pointing radially outward (-45 / +45 deg).
+%   clutter : Task 4 cluttered table; the cup is carried from (0.40,-0.40)
+%             to (0.40, 0.40) m at z = 0.20 m, tool pointing radially outward.
+%             (The Task 4 top-down pick poses cannot be used: with the cup
+%             upright, the wrist sits above the tool and the Task 4 poses
+%             would put it inside the clutter objects.)
 %
-% sc = helperScenarioCup(name, params): params.boardZ overrides the height
-% of the board underside (m), used by the board-height screening in
-% Task5_Extras.m. Each scenario also carries a via-point pose
-% (sc.taskVia, sc.seedVia) used for the "better initial guess" experiment.
+% IK seeds put start and goal on the same arm/wrist configuration, with
+% joint 6 near 0. (If one endpoint had joint 6 = +180 deg and the other
+% -180 deg, the straight-line initial path would spin the wrist a full turn
+% and turn the cup upside down.)
+%
+% sc.taskVia / sc.seedVia (pillar only): a via-point for the "better initial
+% guess" experiment in Task5_Extras.m.
 function sc = helperScenarioCup(name, params)
 
 if nargin < 2, params = struct(); end
@@ -32,43 +33,39 @@ if nargin < 2, params = struct(); end
 switch lower(name)
     case 'window'
         sc = helperScenarioUR5e('window');
-        sc.name = 'window';
 
-    case {'board_low', 'board_high'}
-        if strcmpi(name, 'board_low'), Zs = 0.22; else, Zs = 0.30; end
-        if isfield(params, 'boardZ'), Zs = params.boardZ; end
-        sc.name = lower(name);
-        sc.title = sprintf('Cup over a low board (board top at z = %.2f m)', Zs + 0.03);
-        sc.description = sprintf(['53 x 24 x 3 cm board (underside at z = %.2f m) in front of the robot; ' ...
-            'carry an upright cup from y = -0.42 m to y = +0.42 m, 10 cm above the table.'], Zs);
-        % v2: board starts 0.42 m from the base (was 0.30 m) and the
-        % endpoints moved out to y = +-0.42 m (was +-0.35 m). In v1 the start
-        % pose of the high board cleared the board by < 1 cm (the elbow
-        % passed its near edge), so failures could not be blamed on the
-        % constraint alone. Now both endpoints clear the board by > 5 cm.
-        sc.shapes = [shp('box', [0 0 -0.04], [1.6 1.6 0.06], 'table'), ...
-                     shp('box', [0.685 0 Zs + 0.015], [0.53 0.24 0.03], 'board')];
-        sc.taskInit  = trvec2tform([0.62 -0.42 0.10]) * rotm2tform(Rcup(0));
-        sc.taskFinal = trvec2tform([0.62  0.42 0.10]) * rotm2tform(Rcup(0));
-        sc.seedInit  = [-0.880; -0.666; 1.277; -0.612; 0.691; 0.000];
-        sc.seedFinal = [ 0.478; -0.666; 1.277; -0.612; 2.049; 0.000];
-        % via-point above the board centre, cup upright (Task5_Extras)
-        sc.taskVia = trvec2tform([0.62 0 0.48]) * rotm2tform(Rcup(0));
-        sc.seedVia = [-0.259; -1.307; 1.289; 0.018; 1.312; 0.000];
-        sc.view = [120 20];
-        sc.axisLimits = [-0.3 1.0 -0.7 0.7 -0.1 0.9];
+    case 'shelf'
+        sc = helperScenarioUR5e('shelf');
+
+    case 'pillar'
+        sc = helperScenarioUR5e('pillar', params);
+        sc.title = [sc.title ' (cup upright)'];
+        sc.taskInit  = trvec2tform([0.45 -0.45 0.35]) * rotm2tform(Rcup(-45));
+        sc.taskFinal = trvec2tform([0.45  0.45 0.35]) * rotm2tform(Rcup( 45));
+        sc.seedInit  = [-1.036; -1.224; 1.516; -0.291; 1.320; 0.000];
+        sc.seedFinal = [ 0.534; -1.224; 1.516; -0.291; 1.320; 0.000];
+        % via-point between base and pillar, cup upright
+        sc.taskVia = trvec2tform([0.28 0 0.40]) * rotm2tform(Rcup(0));
+        sc.seedVia = [-0.831; -2.261; 2.237; 0.024; 0.739; 0.000];
+
+    case 'clutter'
+        sc = helperScenarioUR5e('clutter');
+        sc.title = 'Cluttered tabletop (cup upright)';
+        sc.description = ['Task 4 cluttered table; carry an upright cup from (0.40, -0.40) ' ...
+            'to (0.40, 0.40) m at z = 0.20 m, over the divider and under the overhead bar.'];
+        sc.taskInit  = trvec2tform([0.40 -0.40 0.20]) * rotm2tform(Rcup(-45));
+        sc.taskFinal = trvec2tform([0.40  0.40 0.20]) * rotm2tform(Rcup( 45));
+        sc.seedInit  = [-1.075; -1.204; 1.927; -0.723; 1.281; 0.000];
+        sc.seedFinal = [ 0.495; -1.204; 1.927; -0.723; 1.281; 0.000];
 
     otherwise
         error('helperScenarioCup: unknown scenario "%s"', name);
 end
-end
-
-function s = shp(type, center, dims, name, yaw)
-if nargin < 5, yaw = 0; end
-s = struct('type', type, 'center', center, 'dims', dims, 'name', name, 'yaw', yaw);
+sc.name = lower(name);
 end
 
 function R = Rcup(dirDeg)
+% tool z horizontal along dirDeg, tool y = world z (cup upright)
 a = deg2rad(dirDeg);
 z = [cos(a); sin(a); 0];
 y = [0; 0; 1];
