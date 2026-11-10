@@ -1,15 +1,17 @@
 %% *Task 5: Keep the end-effector y-axis upright ("carry a cup")*
 % Adds an orientation constraint cost to STOMP (see stompTrajCost.m in this
 % folder) and compares planning WITHOUT and WITH the constraint on the same
-% scenario, same start/goal, same random seed:
-%   window     - Task 4 window scenario       (constraint should work)
-%   board_low  - carry the cup over a low board (constraint should work;
-%                unconstrained STOMP tips the cup ~40 deg)
-%   board_high - same with a higher board      (expected FAILURE with the
-%                constraint: stuck trying to pass under the board)
+% scenario, same start/goal, same random seed. The scenarios are the Task 4
+% scenarios (same obstacles), with cup-upright start and goal poses
+% (helperScenarioCup.m):
+%   window  - Task 4 window, unchanged
+%   shelf   - Task 4 shelf, unchanged
+%   pillar  - Task 4 pillar, cup-upright endpoints
+%   clutter - Task 4 cluttered table, cup carried over the divider
 %
 % Outputs (Task_5/Results):
 %   - overlay figures with the end-effector y-axis drawn at every waypoint
+%   - one comparison figure per scenario (without vs with the constraint)
 %   - tilt-angle-along-the-path plot, unconstrained vs constrained
 %   - summary table (.csv)
 %   - optional seed study (success rate + tilt over several seeds)
@@ -22,13 +24,13 @@
 clear; clc; close all;
 
 %% Settings
-scenarioNames  = {'window', 'board_low', 'board_high'};
+scenarioNames  = {'window', 'pillar', 'clutter'};
 qcWeight       = 10;        % constraint weight w_c (0 = constraint off)
 runSeedStudy   = true;      % repeat both settings with nTrials seeds
 nTrials        = 3;
-runWeightSweep = true;     % success / tilt vs w_c on board_low (Task5_Extras.m does a 2-scenario version)
+runWeightSweep = false;     % success / tilt vs w_c on one scenario (Task5_Extras.m does a 2-scenario version)
 stopRule       = 'improved';  % see Task_2/stompPlan.m
-sweepScenario  = 'board_low';
+sweepScenario  = 'clutter';
 sweepWeights   = [0 2 5 10 20 50];
 saveFigures    = true;
 
@@ -83,8 +85,9 @@ for s = 1:numel(scenarioNames)
     tInit = eeTiltDeg(robot, theta_init, endEffector);
     fprintf('Initial path: %d/%d colliding waypoints, max tilt %.1f deg\n', cInit.nWp, opts.nDiscretize, max(tInit));
 
-    figTilt = figure('Name', ['Task5 tilt ' sc.name], 'Color', 'w'); hold on; grid on;
     colors = [0.85 0.2 0.2; 0.1 0.45 0.85];
+    thetaByMode = cell(1, numel(modes)); tiltByMode = cell(1, numel(modes)); freeByMode = false(1, numel(modes));
+    sByMode = cell(1, numel(modes)); collByMode = cell(1, numel(modes));
 
     for m = 1:numel(modes)
         model = baseModel; model.qcWeight = modes(m);
@@ -96,14 +99,6 @@ for s = 1:numel(scenarioNames)
         fprintf('%d iterations (%s) | %s | max tilt %.1f deg, mean tilt %.1f deg | min clearance %.3f m\n', ...
             res.iter, res.stopReason, ternary(c.free, 'COLLISION-FREE', sprintf('IN COLLISION (%d dense)', c.nDense)), ...
             max(tilt), mean(tilt), c.minClearance);
-
-        % tilt along the path; collision segments marked
-        figure(figTilt);
-        plot(sPath, tilt, '-', 'Color', colors(m, :), 'LineWidth', 2, 'DisplayName', modeTxt{m});
-        if any(c.denseCollision)
-            plot(sPath(c.denseCollision), tilt(c.denseCollision), 'x', 'Color', colors(m, :), ...
-                'MarkerSize', 6, 'HandleVisibility', 'off');
-        end
 
         % overlay with the cup axis at every waypoint
         figO = plotTrajectoryOverlay(robot, res.theta, theta_init, world, endEffector, ...
@@ -143,13 +138,31 @@ for s = 1:numel(scenarioNames)
         row.medianMaxTilt   = medTilt;
         summary = [summary; row]; %#ok<AGROW>
         save(fullfile(resultsDir, sprintf('Task5_%s_w%g.mat', sc.name, modes(m))), 'res', 'c', 'tilt', 'q0', 'qT', 'sc');
+        thetaByMode{m} = res.theta; tiltByMode{m} = tilt; freeByMode(m) = c.free;
+        sByMode{m} = sPath; collByMode{m} = c.denseCollision;
     end
 
-    figure(figTilt);
-    plot(linspace(1, opts.nDiscretize, numel(tInit)), tInit, 'k:', 'LineWidth', 1.2, 'DisplayName', 'initial straight line');
-    xlabel('Path progress (waypoint index)'); ylabel('Cup tilt (deg)  [0 = upright]');
-    title({sc.title, 'Tilt of end-effector y-axis from vertical (x = in collision)'});
-    legend('Location', 'best');
+    % One picture of the trajectory change: without vs with the constraint
+    figCmp = plotConstraintComparison(robot, thetaByMode{1}, thetaByMode{2}, world, endEffector, ...
+        max(tiltByMode{1}), max(tiltByMode{2}), freeByMode, sc, qcWeight);
+    if saveFigures
+        saveFigureSafe(figCmp, fullfile(resultsDir, sprintf('Task5_%s_comparison.png', sc.name)));
+    end
+
+    % tilt along the path, both runs (drawn in one go from the stored data)
+    figTilt = figure('Name', ['Task5 tilt ' sc.name], 'Color', 'w');
+    axT = axes('Parent', figTilt); hold(axT, 'on'); grid(axT, 'on');
+    for m = 1:numel(modes)
+        plot(axT, sByMode{m}, tiltByMode{m}, '-', 'Color', colors(m, :), 'LineWidth', 2, 'DisplayName', modeTxt{m});
+        if any(collByMode{m})
+            plot(axT, sByMode{m}(collByMode{m}), tiltByMode{m}(collByMode{m}), 'x', 'Color', colors(m, :), ...
+                'MarkerSize', 6, 'HandleVisibility', 'off');
+        end
+    end
+    plot(axT, linspace(1, opts.nDiscretize, numel(tInit)), tInit, 'k:', 'LineWidth', 1.2, 'DisplayName', 'initial straight line');
+    xlabel(axT, 'Path progress (waypoint index)'); ylabel(axT, 'Cup tilt (deg)  [0 = upright]');
+    title(axT, {sc.title, 'Tilt of end-effector y-axis from vertical (x = in collision)'}, 'Interpreter', 'none');
+    legend(axT, 'Location', 'best');
     if saveFigures
         saveFigureSafe(figTilt, fullfile(resultsDir, sprintf('Task5_%s_tilt.png', sc.name)));
     end
