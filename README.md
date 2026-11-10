@@ -17,6 +17,8 @@ The project progresses from a baseline STOMP implementation to robot adaptation,
 9. [Outputs and reproducibility](#outputs-and-reproducibility)
 10. [Troubleshooting](#troubleshooting)
 11. [Scope and limitations](#scope-and-limitations)
+12. [Contributions](#contributions)
+13. [References](#references)
 
 ## Project overview
 
@@ -151,7 +153,7 @@ To generate the separate demonstration video, see:
 Task1_Demo_Video
 ```
 
-Existing recordings are available under `Task 1/Videos/`.
+**Task 1 validation video:** The baseline Kinova Gen3 STOMP demonstration is available in the [Task 1/Videos directory](Task%201/Videos/). Refer to this recording for visual validation of the planned robot motion and obstacle avoidance. The demonstration can be regenerated using `Task1_Demo_Video.m`. The video illustrates the recorded run; it is not a statistical success-rate study.
 
 ### Task 2 — UR5e adaptation and validation
 
@@ -339,7 +341,12 @@ An optimizer stopping is not itself proof of a collision-free trajectory; the po
 
 ## Validation and recorded results
 
-The following figures summarize **recorded Task 2 and Task 3 experiments**. They describe particular test conditions, not universal guarantees or independently reproduced results on every MATLAB installation.
+The following sections describe the validation evidence and recorded experiments for all five tasks. Numerical summaries are provided where verified results are available; other tasks link to their demonstration or scenario-specific outputs. Results describe particular test conditions, not universal guarantees.
+
+### Task 1 — Kinova Gen3 demonstration
+
+The baseline STOMP implementation is demonstrated using the Kinova Gen3 robot. **For visual validation, see the [Task 1 demonstration videos](Task%201/Videos/)**, or run `Task1_Demo_Video.m` to regenerate the demonstration. Review the initial and optimized motion to assess the robot trajectory and obstacle avoidance. This video is demonstration evidence for the recorded scenario, not a formal guarantee of collision-free motion between every sampled configuration.
+
 
 ### Task 2 — UR5e single-scenario result
 
@@ -382,9 +389,25 @@ This is a **forward-kinematics microbenchmark**, not a controlled measurement of
 
 A separate recorded PoE-STOMP run passed collision checks at 0/191 interpolated configurations. If reproducing published numerical results, use the same random seed, solver settings, cost-function version and stopping rule; the shared planner has since gained an improved stopping option.
 
-### Task 4 and Task 5 outputs
+### Task 4 — Complex obstacle scenario validation
 
-The repository includes saved `.mat`, `.csv` and `.png` outputs for the complex obstacle and orientation-constraint experiments. Consult the corresponding task scripts and result summaries for scenario-specific measurements; this README does not claim a single aggregate success rate across these differing environments.
+Task 4 evaluates STOMP in four obstacle environments: `pillar`, `clutter`, `window`, and `shelf`. The scenario scripts assess initial-path collisions, final waypoint and densely interpolated collision checks, optimization cost, stopping reason and trajectory visualization. `Task4_Extras.m` additionally compares original versus improved stopping criteria and investigates pillar placement.
+
+- Run `Task4_UR5e_Scenarios.m` for the primary scenario experiments.
+- Run `Task4_Extras.m` for stopping-rule and pillar-placement comparisons.
+- Review the saved scenario outputs in [`Task_4/Results_v1/`](Task_4/Results_v1/) and [`Task_4/Results_v2/`](Task_4/Results_v2/) for individual results.
+
+Success and convergence should be interpreted per scenario; no combined success rate is asserted here.
+
+### Task 5 — Orientation-constraint validation
+
+Task 5 compares STOMP trajectories **with and without** the end-effector upright-orientation penalty. Validation considers the end-effector tilt profile, trajectory and obstacle avoidance, and the trade-off between orientation maintenance and planning cost. The orientation penalty weight `qcWeight` can be set to zero to disable the constraint for comparison.
+
+- Run `Task5_CupUpright.m` to generate the constrained and unconstrained comparisons and tilt-angle plots.
+- Run `Task5_Extras.m` to examine penalty weights, scenario difficulty and trajectory initialization.
+- Review saved outputs in [`Task_5/Results5_v2/`](Task_5/Results5_v2/) and [`Task_5/Results_board/`](Task_5/Results_board/) for scenario-specific results.
+
+These validations assess the simulated scenarios only; the README does not infer a general orientation-maintenance or collision-avoidance success rate.
 
 ## Outputs and reproducibility
 
@@ -443,12 +466,22 @@ Keep all task folders together under the same repository root and preserve the o
 
 ## Contributions
 
+<<<<<<< HEAD
 
 | Member | Task(s) owned | Main files written / modified | Other contributions (report, slides, testing…) |
 |---|---|---|---|
 | Chan Ping-Shuen Savannah | Task 1 | `Task 1/` — | |
 | Muhammad Irfan Bin Abdullah | Tasks 2, 3 | `Task_2/`, `Task_3/` — | |
 | Singhal Yash | Tasks 4, 5 | `Task_4/`, `Task_5/` | |
+=======
+| Member | Assigned task(s) | Main contributions |
+| --- | --- | --- |
+| **Chan Ping-Shuen Savannah** | **Task 1** | Kinova Gen3 STOMP baseline, stochastic trajectory optimization functions, robot-motion visualization and demonstration video. |
+| **Muhammad Irfan Bin Abdullah** | **Tasks 2 and 3** | UR5e adaptation, inverse kinematics and 39-sphere collision model; random-seed and waypoint validation; PoE screw-axis derivation, FK implementation, numerical validation and benchmarking. |
+| **Singhal Yash** | **Tasks 4 and 5** | Challenging obstacle scenarios, stopping-criterion experiments, orientation-constrained STOMP and associated scenario evaluations. |
+
+The task assignments above identify the primary areas of responsibility; shared code and group review may span multiple tasks.
+>>>>>>> 848510a (Update README with task validation and team contributions)
 
 ---
 
