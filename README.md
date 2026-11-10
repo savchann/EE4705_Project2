@@ -440,3 +440,21 @@ Keep all task folders together under the same repository root and preserve the o
 ---
 
 **Suggested reading order:** Start with Task 1 for the STOMP algorithm, Task 2 for the UR5e integration, Task 3 for PoE, then Tasks 4 and 5 for the more advanced planning scenarios and constraints.
+
+## Contributions
+
+
+| Member | Task(s) owned | Main files written / modified | Other contributions (report, slides, testing…) |
+|---|---|---|---|
+| Chan Ping-Shuen Savannah | Task 1 | `Task 1/` — | |
+| Muhammad Irfan Bin Abdullah | Tasks 2, 3 | `Task_2/`, `Task_3/` — | |
+| Singhal Yash | Tasks 4, 5 | `Task_4/`, `Task_5/` | |
+
+---
+
+## References
+
+- M. Kalakrishnan, S. Chitta, E. Theodorou, P. Pastor, S. Schaal, "STOMP: Stochastic trajectory optimization for motion planning," *IEEE ICRA*, 2011. [doi:10.1109/ICRA.2011.5980280](https://ieeexplore.ieee.org/document/5980280)
+- K. M. Lynch, F. C. Park, *Modern Robotics: Mechanics, Planning, and Control*, Cambridge University Press, 2017 (Product of Exponentials, Ch. 4).
+
+
