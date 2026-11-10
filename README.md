@@ -466,8 +466,6 @@ Keep all task folders together under the same repository root and preserve the o
 
 ## Contributions
 
-<<<<<<< HEAD
-
 | Member | Task(s) owned | Main files written / modified | Other contributions (report, slides, testing…) |
 |---|---|---|---|
 | Chan Ping-Shuen Savannah | Task 1 | `Task 1/` — | |
@@ -481,7 +479,6 @@ Keep all task folders together under the same repository root and preserve the o
 | **Singhal Yash** | **Tasks 4 and 5** | Challenging obstacle scenarios, stopping-criterion experiments, orientation-constrained STOMP and associated scenario evaluations. |
 
 The task assignments above identify the primary areas of responsibility; shared code and group review may span multiple tasks.
->>>>>>> 848510a (Update README with task validation and team contributions)
 
 ---
 
